@@ -1,19 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { TEXTS } from '../../../constants/texts';
 import { TMessageUpsert } from '../../../interfaces/baileys.interface';
-import { ChatsService } from '../../chats/chats.service';
-import { PatientsService } from '../../patients/patients.service';
 import { StepBase } from '../step.base';
 
 @Injectable()
 export class AcceptTermsStep extends StepBase {
-  constructor(
-    private readonly patientsService: PatientsService,
-    private readonly chatsService: ChatsService,
-  ) {
-    super();
-  }
-
   async main(event: TMessageUpsert): Promise<boolean> {
     const [message] = event.messages;
     const text =

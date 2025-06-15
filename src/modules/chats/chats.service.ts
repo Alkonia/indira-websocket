@@ -1,17 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Chat } from '../../models/chat.schema';
-import { TMessageUpsert } from '../../interfaces/baileys.interface';
+import { TMessageUpsert, TWASocket } from '../../interfaces/baileys.interface';
 import { TMessageSend } from '../../interfaces/message-send.interface';
+import { StepsService } from '../steps/steps.service';
 
 @Injectable()
 export class ChatsService {
-  constructor(@InjectModel(Chat.name) private chatModel: Model<Chat>) {}
+  constructor(
+    @InjectModel(Chat.name) private chatModel: Model<Chat>,
+    @Inject(forwardRef(() => StepsService))
+    private stepsService: StepsService,
+  ) {}
 
-  private static waSocket: any;
+  private static waSocket: TWASocket;
 
-  static setSocket(socket: any) {
+  static setSocket(socket: TWASocket) {
     ChatsService.waSocket = socket;
   }
 
@@ -24,7 +29,6 @@ export class ChatsService {
         message.message?.stickerMessage?.url;
 
       if (!message.key.remoteJid || !text) {
-        console.log(message);
         throw new Error('Se esperaba remoteJid');
       }
 
@@ -66,5 +70,45 @@ export class ChatsService {
         console.error('Error al guardar mensaje:', error);
       }
     }
+  }
+
+  async boundMessageHandler(event: TMessageUpsert) {
+    if (!this.isExecutable(event)) {
+      return;
+    }
+
+    try {
+      await Promise.all([
+        this.saveResponse(event),
+        this.stepsService.processMessage(event),
+      ]);
+
+      console.log('Mensaje procesado correctamente');
+    } catch (error) {
+      console.error('Error al procesar mensaje:', error);
+    }
+  }
+
+  private isExecutable({ type, messages }: TMessageUpsert): boolean {
+    if (!messages || messages.length === 0) {
+      console.log('No hay mensajes en el evento');
+      return false;
+    }
+
+    const [message] = messages;
+
+    if (!message || !message.key) {
+      console.log('Mensaje inválido o sin key');
+      return false;
+    }
+
+    const result = Boolean(
+      type === 'notify' &&
+        message.key.remoteJid &&
+        //message.key.fromMe ||
+        !message.key.remoteJid.includes('@g.us') &&
+        !message.key.participant,
+    );
+    return result;
   }
 }

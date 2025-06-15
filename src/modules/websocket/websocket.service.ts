@@ -4,132 +4,96 @@ import {
   useMultiFileAuthState,
   fetchLatestBaileysVersion,
   DisconnectReason,
-  BaileysEventEmitter,
   ConnectionState,
+  BaileysEventEmitter,
 } from 'baileys';
-import P from 'pino';
+import * as P from 'pino';
 import * as qrcode from 'qrcode-terminal';
-import Boom from '@hapi/boom';
-import { TWASocket, TMessageUpsert } from '../../interfaces/baileys.interface';
+import * as Boom from '@hapi/boom';
+import { TWASocket } from '../../interfaces/baileys.interface';
 import { ChatsService } from '../chats/chats.service';
-import { StepsService } from '../steps/steps.service';
 
 @Injectable()
 export class WebsocketService implements OnModuleInit, OnModuleDestroy {
-  private socket?: TWASocket;
+  private static socket?: TWASocket;
   private saveCreds?: () => Promise<void>;
   private eventSocket?: BaileysEventEmitter['on'];
 
-  constructor(
-    private readonly chatsService: ChatsService,
-    private readonly stepsService: StepsService,
-  ) {}
+  constructor(private readonly chatsService: ChatsService) {}
 
   async onModuleInit() {
-    await this.initializeSocket();
-    this.eventConnection();
-    this.eventMessage();
-    this.eventCreds();
-    console.log('Conexión a Websocket establecida correctamente');
+    try {
+      await this.initializeSocket();
+      this.registerEvents();
+      console.log('✅ WebSocket inicializado correctamente');
+    } catch (error) {
+      console.error('❌ Error al iniciar WebSocket:', error);
+    }
   }
 
   onModuleDestroy() {
-    this.close();
+    if (!WebsocketService.socket) {
+      console.warn('⚠️ Socket no inicializado al cerrar');
+      return;
+    }
+    WebsocketService.socket.ev.removeAllListeners('connection.update');
+    WebsocketService.socket.ev.removeAllListeners('messages.upsert');
+    WebsocketService.socket.ev.removeAllListeners('creds.update');
+    WebsocketService.socket.end(undefined);
+    console.log('🧹 Socket cerrado correctamente');
   }
 
   private async initializeSocket() {
     const { state, saveCreds } = await useMultiFileAuthState('auth');
     const { version } = await fetchLatestBaileysVersion();
 
-    this.socket = makeWASocket({
+    WebsocketService.socket = makeWASocket({
       version,
-      logger: P({ level: 'silent' }),
+      logger: P.default({ level: 'silent' }),
       auth: state,
     });
 
-    ChatsService.setSocket(this.socket);
-
     this.saveCreds = saveCreds;
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    this.eventSocket = this.socket.ev.on;
+    this.eventSocket = WebsocketService.socket.ev.on;
+    ChatsService.setSocket(WebsocketService.socket);
   }
 
-  private eventConnection() {
-    if (!this.eventSocket)
-      throw new Error('Socket o saveCreds no inicializados');
+  private registerEvents() {
+    if (!this.eventSocket) throw new Error('Socket no inicializado');
+
+    this.eventSocket('connection.update', this.connect.bind(this));
 
     this.eventSocket(
-      'connection.update',
-      (update: Partial<ConnectionState>) => {
-        const { connection, lastDisconnect, qr } = update;
-
-        if (qr) {
-          qrcode.generate(qr, { small: true });
-        }
-
-        if (connection === 'close') {
-          const shouldReconnect =
-            Boom.isBoom(lastDisconnect?.error) &&
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
-            lastDisconnect?.error.output?.statusCode !==
-              DisconnectReason.loggedOut;
-
-          console.log('connection closed. Reconnecting?', shouldReconnect);
-          if (shouldReconnect) {
-            this.initializeSocket();
-          }
-        }
-
-        if (connection === 'open') {
-          console.log('✅ Conexión abierta');
-        }
-      },
+      'messages.upsert',
+      this.chatsService.boundMessageHandler.bind(this.chatsService),
     );
+
+    if (this.saveCreds) {
+      this.eventSocket('creds.update', this.saveCreds);
+    }
   }
 
-  private eventMessage() {
-    if (!this.eventSocket)
-      throw new Error('Socket o saveCreds no inicializados');
+  private connect(update: Partial<ConnectionState>) {
+    const { connection, lastDisconnect, qr } = update;
+    console.log('📶 connection.update', update);
 
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    this.eventSocket('messages.upsert', async (event: TMessageUpsert) => {
-      if (!this.isExecutable(event)) {
-        return;
+    if (qr) {
+      qrcode.generate(qr, { small: true });
+    }
+
+    if (connection === 'close') {
+      const shouldReconnect =
+        Boom.isBoom(lastDisconnect?.error) &&
+        lastDisconnect?.error.output?.statusCode !== DisconnectReason.loggedOut;
+
+      console.log('🔌 Conexión cerrada. ¿Reconectar?', shouldReconnect);
+      if (shouldReconnect) {
+        this.onModuleInit();
       }
-      console.log(JSON.stringify(event));
-      try {
-        await this.chatsService.saveResponse(event);
-        await this.stepsService.processMessage(event);
-      } catch (error) {
-        console.log(error);
-      }
-    });
-  }
+    }
 
-  private eventCreds() {
-    if (!this.eventSocket || !this.saveCreds)
-      throw new Error('Socket o saveCreds no inicializados');
-
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    this.eventSocket('creds.update', this.saveCreds);
-  }
-
-  private isExecutable({ type, messages }: TMessageUpsert): boolean {
-    const [message] = messages;
-    return Boolean(
-      type === 'notify' &&
-        message.key.remoteJid &&
-        //message.key.fromMe ||
-        !message.key.remoteJid.includes('@g.us') &&
-        !message.key.participant,
-    );
-  }
-
-  close() {
-    if (!this.socket) throw new Error('Socket o saveCreds no inicializados');
-    this.socket.ev.removeAllListeners('connection.update');
-    this.socket.ev.removeAllListeners('messages.upsert');
-    this.socket.ev.removeAllListeners('creds.update');
-    this.socket.end(undefined);
+    if (connection === 'open') {
+      console.log('✅ Conexión abierta');
+    }
   }
 }

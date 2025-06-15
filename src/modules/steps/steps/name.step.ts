@@ -4,7 +4,7 @@ import { TMessageUpsert } from '../../../interfaces/baileys.interface';
 import { StepBase } from '../step.base';
 
 @Injectable()
-export class FirstContactStep extends StepBase {
+export class NameStep extends StepBase {
   async main(event: TMessageUpsert): Promise<boolean> {
     const [message] = event.messages;
     if (!message.key?.remoteJid) {

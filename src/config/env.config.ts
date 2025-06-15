@@ -7,8 +7,7 @@ export const envConfig = registerAs('config', () => {
       wsPort: parseInt(process.env.WS_PORT || '8080', 10),
     },
     database: {
-      uri:
-        process.env.DATABASE_COLLECTIONS_URL || 'mongodb://localhost:27017/ws',
+      uri: process.env.DATABASE_COLLECTIONS_URL || '',
     },
   };
 });

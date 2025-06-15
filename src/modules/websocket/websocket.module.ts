@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
 import { WebsocketService } from './websocket.service';
 import { ChatsModule } from '../chats/chats.module';
-import { StepsModule } from '../steps/steps.module';
 
 @Module({
-  imports: [ChatsModule, StepsModule],
+  imports: [ChatsModule],
   providers: [WebsocketService],
   exports: [WebsocketService],
 })
