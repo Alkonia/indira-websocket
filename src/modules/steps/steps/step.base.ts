@@ -2,13 +2,13 @@ import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { TMessageUpsert } from 'src/interfaces/baileys.interface';
 import { IStepContract } from '../../../interfaces/steps-contract.interface';
 import { ChatsService } from '../../chats/chats.service';
-import { PatientsService } from '../../patients/patients.service';
+import { ClientsService } from '../../clients/clients.service';
 import { extractText } from '../../../utils/message.util';
 
 @Injectable()
 export class StepBase implements IStepContract {
   constructor(
-    protected readonly patientsService: PatientsService,
+    protected readonly clientsService: ClientsService,
     @Inject(forwardRef(() => ChatsService))
     protected readonly chatsService: ChatsService,
   ) {}

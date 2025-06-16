@@ -9,7 +9,7 @@ export class AcceptTermsStep extends StepBase {
     const { remoteJid, text } = this.processMessage(event);
     if (text !== '1') {
       await Promise.all([
-        this.patientsService.upsertPatient({
+        this.clientsService.upsertClient({
           contactNumber: remoteJid,
           rejectAcceptTerms: true,
         }),
@@ -24,7 +24,7 @@ export class AcceptTermsStep extends StepBase {
     }
 
     await Promise.all([
-      this.patientsService.upsertPatient({
+      this.clientsService.upsertClient({
         contactNumber: remoteJid,
         acceptTerms: true,
         acceptTermsDate: new Date(),

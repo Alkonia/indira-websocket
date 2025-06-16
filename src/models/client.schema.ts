@@ -5,7 +5,7 @@ import { Document } from 'mongoose';
   timestamps: true,
   versionKey: false,
 })
-export class Patient extends Document {
+export class Client extends Document {
   declare _id: string;
 
   @Prop({ trim: true })
@@ -36,5 +36,5 @@ export class Patient extends Document {
   acceptTermsDate: Date;
 }
 
-export const PatientSchema = SchemaFactory.createForClass(Patient);
-export type IPatient = Patient;
+export const ClientSchema = SchemaFactory.createForClass(Client);
+export type IClient = Client;

@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { TMessageUpsert } from '../../interfaces/baileys.interface';
 import { TStepper } from '../../interfaces/message.interface';
-import { IPatient } from '../../models/patient.schema';
-import { PatientsService } from '../patients/patients.service';
+import { IClient } from '../../models/client.schema';
+import { ClientsService } from '../clients/clients.service';
 import { StepFactory } from './steps/step.factory';
 
 @Injectable()
 export class StepsService {
   constructor(
-    private readonly patientService: PatientsService,
+    private readonly clientsService: ClientsService,
     private readonly stepFactory: StepFactory,
   ) {}
 
@@ -17,11 +17,11 @@ export class StepsService {
     await this.executeStep(event, stepInfo);
   }
 
-  private getStep(patient: IPatient | null): number {
-    if (!patient || patient.rejectAcceptTerms) {
+  private getStep(client: IClient | null): number {
+    if (!client || client.rejectAcceptTerms) {
       return 1;
     }
-    if (patient && !patient.acceptTerms) {
+    if (client && !client.acceptTerms) {
       return 2;
     }
     return 0;
@@ -32,12 +32,12 @@ export class StepsService {
     if (!message.key.remoteJid) {
       throw new Error('Se esperaba remoteJid');
     }
-    const patient = await this.patientService.getPatientByContactNumber(
+    const client = await this.clientsService.getClientByContactNumber(
       message.key.remoteJid,
     );
     return {
-      step: this.getStep(patient),
-      patient,
+      step: this.getStep(client),
+      client,
     };
   }
 

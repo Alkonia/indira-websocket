@@ -8,7 +8,7 @@ export class NameStep extends StepBase {
   async main(event: TMessageUpsert): Promise<boolean> {
     const { remoteJid } = this.processMessage(event);
     await Promise.all([
-      this.patientsService.upsertPatient({
+      this.clientsService.upsertClient({
         contactNumber: remoteJid,
         rejectAcceptTerms: false,
       }),

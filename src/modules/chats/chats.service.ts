@@ -86,7 +86,8 @@ export class ChatsService {
         message.key.remoteJid &&
         //message.key.fromMe ||
         !message.key.remoteJid.includes('@g.us') &&
-        !message.key.participant,
+        !message.key.participant &&
+        message.key.remoteJid.startsWith('57'),
     );
     return result;
   }

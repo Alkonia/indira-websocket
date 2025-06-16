@@ -1,6 +1,6 @@
-import { IPatient } from '../models/patient.schema';
+import { IClient } from '../models/client.schema';
 
 export interface TStepper {
   step: number;
-  patient: IPatient | null;
+  client: IClient | null;
 }
