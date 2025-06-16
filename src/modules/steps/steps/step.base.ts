@@ -3,6 +3,7 @@ import { TMessageUpsert } from 'src/interfaces/baileys.interface';
 import { IStepContract } from '../../../interfaces/steps-contract.interface';
 import { ChatsService } from '../../chats/chats.service';
 import { PatientsService } from '../../patients/patients.service';
+import { extractText } from '../../../utils/message.util';
 
 @Injectable()
 export class StepBase implements IStepContract {
@@ -13,20 +14,16 @@ export class StepBase implements IStepContract {
   ) {}
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  main(event: TMessageUpsert): Promise<boolean> {
+  main(_: TMessageUpsert): Promise<boolean> {
     throw new Error('Method not implemented.');
   }
 
   protected processMessage(event: TMessageUpsert) {
     const [message] = event.messages;
+    const text = extractText(message) || '';
 
-    const text =
-      message.message?.conversation ||
-      message.message?.extendedTextMessage?.text ||
-      '';
-
-    if (!message.key?.remoteJid || !text) {
-      throw new Error('Se esperaba remoteJid o texto');
+    if (!message.key?.remoteJid) {
+      throw new Error('Se esperaba remoteJid');
     }
 
     const normalizedText = text.toLowerCase().replaceAll(' ', '');

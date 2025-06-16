@@ -12,6 +12,11 @@ export class StepsService {
     private readonly stepFactory: StepFactory,
   ) {}
 
+  async processMessage(event: TMessageUpsert) {
+    const stepInfo = await this.getStepInfo(event);
+    await this.executeStep(event, stepInfo);
+  }
+
   private getStep(patient: IPatient | null): number {
     if (!patient || patient.rejectAcceptTerms) {
       return 1;
@@ -40,10 +45,5 @@ export class StepsService {
     const step = this.stepFactory.getStep(stepInfo.step);
     if (!step) return;
     await step.main(event);
-  }
-
-  async processMessage(event: TMessageUpsert) {
-    const stepInfo = await this.getStepInfo(event);
-    await this.executeStep(event, stepInfo);
   }
 }

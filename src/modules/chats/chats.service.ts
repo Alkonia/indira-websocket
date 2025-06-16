@@ -5,7 +5,8 @@ import { Chat } from '../../models/chat.schema';
 import { TMessageUpsert, TWASocket } from '../../interfaces/baileys.interface';
 import { TMessageSend } from '../../interfaces/message-send.interface';
 import { StepsService } from '../steps/steps.service';
-import { sleep } from 'src/utils/sleep.util';
+import { sleep } from '../../utils/sleep.util';
+import { extractText } from '../../utils/message.util';
 
 @Injectable()
 export class ChatsService {
@@ -23,10 +24,7 @@ export class ChatsService {
   async saveResponse(event: TMessageUpsert) {
     try {
       const [message] = event.messages;
-      const text =
-        message.message?.conversation ||
-        message.message?.extendedTextMessage?.text ||
-        message.message?.stickerMessage?.url;
+      const text = extractText(message);
 
       if (!message.key.remoteJid || !text) {
         throw new Error('Se esperaba remoteJid');
