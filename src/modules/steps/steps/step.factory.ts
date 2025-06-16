@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { FirstContactStep } from './steps/first-contact.step';
-import { AcceptTermsStep } from './steps/accept-terms.step';
+import { FirstContactStep } from './first-contact.step';
+import { AcceptTermsStep } from './accept-terms.step';
 import { StepBase } from './step.base';
-import { NameStep } from './steps/name.step';
+import { NameStep } from './name.step';
 
 @Injectable()
 export class StepFactory {

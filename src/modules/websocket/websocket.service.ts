@@ -15,7 +15,7 @@ import { ChatsService } from '../chats/chats.service';
 
 @Injectable()
 export class WebsocketService implements OnModuleInit, OnModuleDestroy {
-  private static socket?: TWASocket;
+  private socket?: TWASocket;
   private saveCreds?: () => Promise<void>;
   private eventSocket?: BaileysEventEmitter['on'];
 
@@ -32,14 +32,14 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleDestroy() {
-    if (!WebsocketService.socket) {
+    if (!this.socket) {
       console.warn('⚠️ Socket no inicializado al cerrar');
       return;
     }
-    WebsocketService.socket.ev.removeAllListeners('connection.update');
-    WebsocketService.socket.ev.removeAllListeners('messages.upsert');
-    WebsocketService.socket.ev.removeAllListeners('creds.update');
-    WebsocketService.socket.end(undefined);
+    this.socket.ev.removeAllListeners('connection.update');
+    this.socket.ev.removeAllListeners('messages.upsert');
+    this.socket.ev.removeAllListeners('creds.update');
+    this.socket.end(undefined);
     console.log('🧹 Socket cerrado correctamente');
   }
 
@@ -47,15 +47,15 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
     const { state, saveCreds } = await useMultiFileAuthState('auth');
     const { version } = await fetchLatestBaileysVersion();
 
-    WebsocketService.socket = makeWASocket({
+    this.socket = makeWASocket({
       version,
       logger: P.default({ level: 'silent' }),
       auth: state,
     });
 
     this.saveCreds = saveCreds;
-    this.eventSocket = WebsocketService.socket.ev.on;
-    ChatsService.setSocket(WebsocketService.socket);
+    this.eventSocket = this.socket.ev.on;
+    this.chatsService.setSocket(this.socket);
   }
 
   private registerEvents() {
@@ -73,9 +73,12 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private connect(update: Partial<ConnectionState>) {
-    const { connection, lastDisconnect, qr } = update;
-    console.log('📶 connection.update', update);
+  private connect({
+    connection,
+    lastDisconnect,
+    qr,
+  }: Partial<ConnectionState>) {
+    console.log('📶 connection.update', { connection, lastDisconnect, qr });
 
     if (qr) {
       qrcode.generate(qr, { small: true });

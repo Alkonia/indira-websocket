@@ -3,7 +3,7 @@ import { TMessageUpsert } from '../../interfaces/baileys.interface';
 import { TStepper } from '../../interfaces/message.interface';
 import { IPatient } from '../../models/patient.schema';
 import { PatientsService } from '../patients/patients.service';
-import { StepFactory } from './step.factory';
+import { StepFactory } from './steps/step.factory';
 
 @Injectable()
 export class StepsService {

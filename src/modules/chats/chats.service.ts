@@ -5,19 +5,19 @@ import { Chat } from '../../models/chat.schema';
 import { TMessageUpsert, TWASocket } from '../../interfaces/baileys.interface';
 import { TMessageSend } from '../../interfaces/message-send.interface';
 import { StepsService } from '../steps/steps.service';
+import { sleep } from 'src/utils/sleep.util';
 
 @Injectable()
 export class ChatsService {
+  private waSocket: TWASocket;
   constructor(
     @InjectModel(Chat.name) private chatModel: Model<Chat>,
     @Inject(forwardRef(() => StepsService))
     private stepsService: StepsService,
   ) {}
 
-  private static waSocket: TWASocket;
-
-  static setSocket(socket: TWASocket) {
-    ChatsService.waSocket = socket;
+  setSocket(socket: TWASocket) {
+    this.waSocket = socket;
   }
 
   async saveResponse(event: TMessageUpsert) {
@@ -45,30 +45,13 @@ export class ChatsService {
   }
 
   async sendResponse(messages: TMessageSend[]) {
-    if (!ChatsService.waSocket) {
+    if (!this.waSocket) {
       throw new Error('Socket no inicializado');
     }
 
     for (const message of messages) {
-      try {
-        await ChatsService.waSocket.sendMessage(message.remoteJid, {
-          text: message.text,
-        });
-      } catch (error) {
-        console.error('Error al enviar mensaje:', error);
-      }
-
-      try {
-        const newChat = new this.chatModel({
-          contactNumber: message.remoteJid,
-          text: message.text,
-          fromMe: true,
-        });
-
-        await newChat.save();
-      } catch (error) {
-        console.error('Error al guardar mensaje:', error);
-      }
+      await this.sendMessage(message);
+      await this.saveMessage(message);
     }
   }
 
@@ -91,14 +74,12 @@ export class ChatsService {
 
   private isExecutable({ type, messages }: TMessageUpsert): boolean {
     if (!messages || messages.length === 0) {
-      console.log('No hay mensajes en el evento');
       return false;
     }
 
     const [message] = messages;
 
     if (!message || !message.key) {
-      console.log('Mensaje inválido o sin key');
       return false;
     }
 
@@ -110,5 +91,33 @@ export class ChatsService {
         !message.key.participant,
     );
     return result;
+  }
+
+  private async sendMessage(message: TMessageSend) {
+    if (!this.waSocket) {
+      throw new Error('Socket no inicializado');
+    }
+    try {
+      await sleep(1000);
+      await this.waSocket.sendMessage(message.remoteJid, {
+        text: message.text,
+      });
+    } catch (error) {
+      console.error('Error al enviar mensaje:', error);
+    }
+  }
+
+  private async saveMessage(message: TMessageSend) {
+    try {
+      const newChat = new this.chatModel({
+        contactNumber: message.remoteJid,
+        text: message.text,
+        fromMe: true,
+      });
+
+      await newChat.save();
+    } catch (error) {
+      console.error('Error al guardar mensaje:', error);
+    }
   }
 }
