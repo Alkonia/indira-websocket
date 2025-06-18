@@ -7,6 +7,9 @@ import { FirstContactStep } from './steps/first-contact.step';
 import { AcceptTermsStep } from './steps/accept-terms.step';
 import { NameStep } from './steps/name.step';
 import { StepBase } from './steps/step.base';
+import { IdentificationStep } from './steps/identification.step';
+import { IdentificationTypeStep } from './steps/identification-type.step';
+import { DateOfBirthStep } from './steps/date-of-birth.step';
 
 @Module({
   imports: [ClientsModule, forwardRef(() => ChatsModule)],
@@ -17,6 +20,9 @@ import { StepBase } from './steps/step.base';
     FirstContactStep,
     AcceptTermsStep,
     NameStep,
+    IdentificationStep,
+    IdentificationTypeStep,
+    DateOfBirthStep,
   ],
   exports: [StepsService],
 })

@@ -7,7 +7,7 @@ import { StepBase } from './step.base';
 export class AcceptTermsStep extends StepBase {
   async main(event: TMessageUpsert): Promise<boolean> {
     const { remoteJid, text } = this.processMessage(event);
-    if (text !== '1') {
+    if (text.charAt(0) !== '1') {
       await Promise.all([
         this.clientsService.upsertClient({
           contactNumber: remoteJid,
@@ -34,6 +34,10 @@ export class AcceptTermsStep extends StepBase {
         {
           remoteJid,
           text: TEXTS.acceptedTerms,
+        },
+        {
+          remoteJid,
+          text: TEXTS.name,
         },
       ]),
     ]);

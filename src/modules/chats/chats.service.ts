@@ -84,7 +84,7 @@ export class ChatsService {
     const result = Boolean(
       type === 'notify' &&
         message.key.remoteJid &&
-        //message.key.fromMe ||
+        !message.key.fromMe &&
         !message.key.remoteJid.includes('@g.us') &&
         !message.key.participant &&
         message.key.remoteJid.startsWith('57'),
@@ -97,7 +97,7 @@ export class ChatsService {
       throw new Error('Socket no inicializado');
     }
     try {
-      await sleep(1000);
+      await sleep(1500);
       await this.waSocket.sendMessage(message.remoteJid, {
         text: message.text,
       });

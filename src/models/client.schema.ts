@@ -34,6 +34,9 @@ export class Client extends Document {
 
   @Prop()
   acceptTermsDate: Date;
+
+  @Prop({ default: 1 })
+  currentStep: number;
 }
 
 export const ClientSchema = SchemaFactory.createForClass(Client);
